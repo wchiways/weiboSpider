@@ -1,3 +1,4 @@
+from .writer import Writer
 from .csv_writer import CsvWriter
 from .json_writer import JsonWriter
 from .mongo_writer import MongoWriter
@@ -7,4 +8,7 @@ from .sqlite_writer import SqliteWriter
 from .kafka_writer import KafkaWriter
 from .post_writer import PostWriter
 
-__all__ = [CsvWriter, TxtWriter, JsonWriter, MongoWriter, MySqlWriter, SqliteWriter, KafkaWriter, PostWriter]
+__all__ = [
+    Writer, CsvWriter, TxtWriter, JsonWriter, MongoWriter, MySqlWriter,
+    SqliteWriter, KafkaWriter, PostWriter
+]

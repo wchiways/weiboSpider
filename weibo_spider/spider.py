@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from typing import Dict, Any, List, Optional
 import json
 import logging
 import logging.config
@@ -18,10 +19,12 @@ from absl import app, flags
 from tqdm import tqdm
 
 from . import config_util, datetime_util
-from .downloader import AvatarPictureDownloader
+from .config import SpiderConfig
+from .downloader import AvatarPictureDownloader, Downloader
 from .parser import AlbumParser, IndexParser, PageParser, PhotoParser
 from .parser.util import handle_html_async
 from .user import User
+from .writer import Writer
 
 FLAGS = flags.FLAGS
 
@@ -36,52 +39,44 @@ logger = logging.getLogger('spider')
 
 
 class Spider:
-    def __init__(self, config):
+    def __init__(self, config: SpiderConfig) -> None:
         """Weibo类初始化"""
-        self.filter = config[
-            'filter']  # 取值范围为0、1,程序默认值为0,代表要爬取用户的全部微博,1代表只爬取用户的原创微博
-        since_date = config['since_date']
+        self.config = config
+        self.filter: int = config.filter
+        since_date = config.since_date
         if isinstance(since_date, int):
             since_date = date.today() - timedelta(since_date)
-        self.since_date = str(
+        self.since_date: str = str(
             since_date)  # 起始时间，即爬取发布日期从该值到结束时间的微博，形式为yyyy-mm-dd
-        self.end_date = config[
-            'end_date']  # 结束时间，即爬取发布日期从起始时间到该值的微博，形式为yyyy-mm-dd，特殊值"now"代表现在
-        random_wait_pages = config['random_wait_pages']
-        self.random_wait_pages = [
-            min(random_wait_pages),
-            max(random_wait_pages)
-        ]  # 随机等待频率，即每爬多少页暂停一次
-        random_wait_seconds = config['random_wait_seconds']
-        self.random_wait_seconds = [
-            min(random_wait_seconds),
-            max(random_wait_seconds)
-        ]  # 随机等待时间，即每次暂停要sleep多少秒
-        self.global_wait = config['global_wait']  # 配置全局等待时间，如每爬1000页等待3600秒等
-        self.page_count = 0  # 统计每次全局等待后，爬取了多少页，若页数满足全局等待要求就进入下一次全局等待
-        self.write_mode = config[
-            'write_mode']  # 结果信息保存类型，为list形式，可包含txt、csv、json、mongo和mysql五种类型
-        self.pic_download = config[
-            'pic_download']  # 取值范围为0、1,程序默认值为0,代表不下载微博原始图片,1代表下载
-        self.video_download = config[
-            'video_download']  # 取值范围为0、1,程序默认为0,代表不下载微博视频,1代表下载
-        self.file_download_timeout = config.get(
-            'file_download_timeout',
-            [5, 5, 10
-             ])  # 控制文件下载“超时”时的操作，值是list形式，包含三个数字，依次分别是最大超时重试次数、最大连接时间和最大读取时间
-        self.result_dir_name = config.get(
-            'result_dir_name', 0)  # 结果目录名，取值为0或1，决定结果文件存储在用户昵称文件夹里还是用户id文件夹里
-        self.cookie = config['cookie']
-        self.mysql_config = config.get('mysql_config')  # MySQL数据库连接配置，可以不填
-
-        self.sqlite_config = config.get('sqlite_config')
-        self.kafka_config = config.get('kafka_config')
-        self.mongo_config = config.get('mongo_config')
-        self.post_config = config.get('post_config')
-        self.user_config_file_path = ''
-        user_id_list = config['user_id_list']
+        self.end_date: str = str(config.end_date)  # 结束时间，即爬取发布日期从起始时间到该值的微博，形式为yyyy-mm-dd，特殊值"now"代表现在
+        
+        self.random_wait_pages: List[int] = [
+            min(config.random_wait_pages),
+            max(config.random_wait_pages)
+        ]
+        self.random_wait_seconds: List[int] = [
+            min(config.random_wait_seconds),
+            max(config.random_wait_seconds)
+        ]
+        self.global_wait: List[List[int]] = config.global_wait
+        self.page_count: int = 0
+        self.write_mode: List[str] = config.write_mode
+        self.pic_download: int = config.pic_download
+        self.video_download: int = config.video_download
+        self.file_download_timeout: List[int] = config.file_download_timeout
+        self.result_dir_name: int = config.result_dir_name
+        self.cookie: str = config.cookie
+        self.mysql_config: Optional[Dict[str, Any]] = config.mysql_config
+        self.sqlite_config: Optional[str] = config.sqlite_config
+        self.kafka_config: Optional[Dict[str, Any]] = config.kafka_config
+        self.mongo_config: Optional[Dict[str, Any]] = config.mongo_config
+        self.post_config: Optional[Dict[str, Any]] = config.post_config
+        
+        self.user_config_file_path: str = ''
+        user_id_list = config.user_id_list
         if FLAGS.user_id_list:
             user_id_list = FLAGS.user_id_list
+        
         if not isinstance(user_id_list, list):
             if not Path(user_id_list).is_absolute():
                 user_id_list = str(Path.cwd() / user_id_list)
@@ -120,34 +115,37 @@ class Spider:
                 user_id_list, self.since_date)
             for user_config in user_config_list:
                 user_config['end_date'] = self.end_date
-        self.user_config_list = user_config_list  # 要爬取的微博用户的user_config列表
-        self.user_config = {}  # 用户配置,包含用户id和since_date
-        self.new_since_date = ''  # 完成某用户爬取后，自动生成对应用户新的since_date
-        self.user = User()  # 存储爬取到的用户信息
-        self.got_num = 0  # 存储爬取到的微博数
-        self.weibo_id_list = []  # 存储爬取到的所有微博id
-        self.session = None # aiohttp session
+        self.user_config_list: List[Dict[str, str]] = user_config_list  # 要爬取的微博用户的user_config列表
+        self.user_config: Dict[str, str] = {}  # 用户配置,包含用户id和since_date
+        self.new_since_date: str = ''  # 完成某用户爬取后，自动生成对应用户新的since_date
+        self.user: User = User()  # 存储爬取到的用户信息
+        self.got_num: int = 0  # 存储爬取到的微博数
+        self.weibo_id_list: List[str] = []  # 存储爬取到的所有微博id
+        self.session: Optional[aiohttp.ClientSession] = None # aiohttp session
+        
+        self.writers: List[Writer] = []
+        self.downloaders: List[Downloader] = []
 
-    async def write_weibo(self, weibos):
+    async def write_weibo(self, weibos: List[Any]) -> None:
         """将爬取到的信息写入文件或数据库"""
         for downloader in self.downloaders:
             await downloader.download_files(weibos, self.session)
         for writer in self.writers:
             writer.write_weibo(weibos)
 
-    def write_user(self, user):
+    def write_user(self, user: User) -> None:
         """将用户信息写入数据库"""
         for writer in self.writers:
             writer.write_user(user)
 
-    async def get_user_info(self, user_uri):
+    async def get_user_info(self, user_uri: str) -> None:
         """获取用户信息"""
         url = f'https://weibo.cn/{user_uri}/profile'
         selector = await handle_html_async(self.cookie, url, self.session)
         self.user = await IndexParser(self.cookie, user_uri, selector=selector).get_user_async(self.session)
         self.page_count += 1
 
-    async def download_user_avatar(self, user_uri):
+    async def download_user_avatar(self, user_uri: str) -> None:
         """下载用户头像"""
         # Note: This remains synchronous for now as it's a minor part of the flow
         avatar_album_url = PhotoParser(self.cookie,
@@ -234,7 +232,7 @@ class Spider:
         except Exception as e:
             logger.exception(e)
 
-    def _get_filepath(self, type):
+    def _get_filepath(self, type: str) -> Path:
         """获取结果文件路径"""
         try:
             dir_name = self.user.nickname
@@ -254,8 +252,9 @@ class Spider:
             return file_path
         except Exception as e:
             logger.exception(e)
+            return Path() # Return empty path on error to match signature
 
-    def initialize_info(self, user_config):
+    def initialize_info(self, user_config: Dict[str, str]) -> None:
         """初始化爬虫信息"""
         self.got_num = 0
         self.user_config = user_config
@@ -322,7 +321,7 @@ class Spider:
                 VideoDownloader(self._get_filepath('video'),
                                 self.file_download_timeout))
 
-    async def get_one_user(self, user_config):
+    async def get_one_user(self, user_config: Dict[str, str]) -> None:
         """获取一个用户的微博"""
         try:
             await self.get_user_info(user_config['user_uri'])
@@ -349,7 +348,7 @@ class Spider:
         except Exception as e:
             logger.exception(e)
 
-    async def start(self):
+    async def start(self) -> None:
         """运行爬虫"""
         try:
             if not self.user_config_list:
@@ -400,8 +399,8 @@ def _get_config():
 
 async def async_main(_):
     try:
-        config = _get_config()
-        config_util.validate_config(config)
+        config_dict = _get_config()
+        config = SpiderConfig(**config_dict)
         wb = Spider(config)
         await wb.start()  # 爬取微博信息
     except Exception as e:
