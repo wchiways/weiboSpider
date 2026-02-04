@@ -50,7 +50,7 @@ class SqliteWriter(Writer):
             finally:
                 connection.close()
 
-    def write_weibo(self, weibos):
+    async def write_weibo(self, weibos):
         """将爬取的微博信息写入sqlite数据库"""
         # 创建'weibo'表
         create_table = """
@@ -81,7 +81,7 @@ class SqliteWriter(Writer):
         self._sqlite_insert('weibo', weibo_list)
         logger.info(f'{len(weibos)}条微博写入sqlite数据库完毕')
 
-    def write_user(self, user):
+    async def write_user(self, user):
         """将爬取的用户信息写入sqlite数据库"""
         self.user = user
 

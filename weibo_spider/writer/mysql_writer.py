@@ -78,7 +78,7 @@ class MySqlWriter(Writer):
             finally:
                 connection.close()
 
-    def write_weibo(self, weibos):
+    async def write_weibo(self, weibos):
         """将爬取的微博信息写入MySQL数据库"""
         # 创建'weibo'表
         try:
@@ -112,7 +112,7 @@ class MySqlWriter(Writer):
         except Exception as e:
             logger.exception(e)
 
-    def write_user(self, user):
+    async def write_user(self, user):
         """将爬取的用户信息写入MySQL数据库"""
         try:
             self.user = user

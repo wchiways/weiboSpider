@@ -1,5 +1,6 @@
 import logging
 import sys
+import aiofiles
 
 from .writer import Writer
 
@@ -23,17 +24,17 @@ class TxtWriter(Writer):
                            ('up_num', '点赞数'), ('retweet_num', '转发数'),
                            ('comment_num', '评论数'), ('publish_tool', '发布工具')]
 
-    def write_user(self, user):
+    async def write_user(self, user):
         self.user = user
         user_info = '\n'.join(
             [v + '：' + str(getattr(self.user, k)) for k, v in self.user_desc])
 
-        with open(self.file_path, 'ab') as f:
-            f.write((self.user_header + '：\n' + user_info + '\n\n').encode(
+        async with aiofiles.open(self.file_path, 'ab') as f:
+            await f.write((self.user_header + '：\n' + user_info + '\n\n').encode(
                 sys.stdout.encoding))
         logger.info(f'{self.user.nickname}信息写入txt文件完毕，保存路径：{self.file_path}')
 
-    def write_weibo(self, weibo):
+    async def write_weibo(self, weibo):
         """将爬取的信息写入txt文件"""
 
         weibo_header = ''
@@ -49,8 +50,8 @@ class TxtWriter(Writer):
                      for k, v in self.weibo_desc]))
             result = '\n\n'.join(temp_result) + '\n\n'
 
-            with open(self.file_path, 'ab') as f:
-                f.write((weibo_header + result).encode(sys.stdout.encoding))
+            async with aiofiles.open(self.file_path, 'ab') as f:
+                await f.write((weibo_header + result).encode(sys.stdout.encoding))
             logger.info(f'{len(weibo)}条微博写入txt文件完毕，保存路径：{self.file_path}')
         except Exception as e:
             logger.exception(e)

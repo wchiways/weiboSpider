@@ -45,7 +45,7 @@ class MongoWriter(Writer):
                 '系统中可能没有安装或启动MongoDB数据库，请先根据系统环境安装或启动MongoDB，再运行程序')
             sys.exit()
 
-    def write_weibo(self, weibos):
+    async def write_weibo(self, weibos):
         """将爬取的微博信息写入MongoDB数据库"""
         weibo_list = []
         for w in weibos:
@@ -54,7 +54,7 @@ class MongoWriter(Writer):
         self._info_to_mongodb('weibo', weibo_list)
         logger.info(f'{len(weibos)}条微博写入MongoDB数据库完毕')
 
-    def write_user(self, user):
+    async def write_user(self, user):
         """将爬取的用户信息写入MongoDB数据库"""
         self.user = user
         user_list = [user.to_dict()]

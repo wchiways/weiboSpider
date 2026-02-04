@@ -132,12 +132,12 @@ class Spider:
         for downloader in self.downloaders:
             await downloader.download_files(weibos, self.session)
         for writer in self.writers:
-            writer.write_weibo(weibos)
+            await writer.write_weibo(weibos)
 
-    def write_user(self, user: User) -> None:
+    async def write_user(self, user: User) -> None:
         """将用户信息写入数据库"""
         for writer in self.writers:
-            writer.write_user(user)
+            await writer.write_user(user)
 
     async def get_user_info(self, user_uri: str) -> None:
         """获取用户信息"""
@@ -330,7 +330,7 @@ class Spider:
             logger.info('*' * 100)
 
             self.initialize_info(user_config)
-            self.write_user(self.user)
+            await self.write_user(self.user)
             logger.info('*' * 100)
 
             # 下载用户头像相册中的图片。

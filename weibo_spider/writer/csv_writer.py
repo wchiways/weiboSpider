@@ -1,5 +1,7 @@
 import csv
 import logging
+import io
+import aiofiles
 
 from .writer import Writer
 
@@ -29,18 +31,24 @@ class CsvWriter(Writer):
         except Exception as e:
             logger.exception(e)
 
-    def write_user(self, user):
+    async def write_user(self, user):
         self.user = user
 
-    def write_weibo(self, weibos):
+    async def write_weibo(self, weibos):
         """将爬取的信息写入csv文件"""
         try:
             result_data = [[getattr(w, kv[1]) for kv in self.result_headers]
                            for w in weibos]
-            with open(self.file_path, 'a', encoding='utf-8-sig',
-                      newline='') as f:
-                writer = csv.writer(f)
-                writer.writerows(result_data)
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerows(result_data)
+            content = output.getvalue()
+            output.close()
+
+            async with aiofiles.open(self.file_path, 'a', encoding='utf-8-sig',
+                                     newline='') as f:
+                await f.write(content)
             logger.info(f'{len(weibos)}条微博写入csv文件完毕，保存路径：{self.file_path}')
         except Exception as e:
             logger.exception(e)

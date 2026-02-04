@@ -7,11 +7,11 @@ class Writer(ABC):
         pass
 
     @abstractmethod
-    def write_weibo(self, weibo):
+    async def write_weibo(self, weibo):
         """给定微博信息，写入对应文本或数据库"""
         pass
 
     @abstractmethod
-    def write_user(self, user):
+    async def write_user(self, user):
         """给定用户信息，写入对应文本或数据库"""
         pass
