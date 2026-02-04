@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from typing import Dict, Any, List, Optional
+from pydantic import ValidationError
 import json
 import logging
 import logging.config
@@ -403,6 +404,9 @@ async def async_main(_):
         config = SpiderConfig(**config_dict)
         wb = Spider(config)
         await wb.start()  # 爬取微博信息
+    except ValidationError as e:
+        logger.error(f"配置验证失败:\n{e}")
+        sys.exit(1)
     except Exception as e:
         logger.exception(e)
 
