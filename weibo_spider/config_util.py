@@ -103,6 +103,7 @@ def update_cookie_config(cookie, user_config_file_path):
     
 def check_cookie(user_config_file_path): 
     """Checks if user is logged in"""
+    import sys
     try:
         cookie = get_cookie()
         if cookie.get("MLOGIN", '0') == '0':
