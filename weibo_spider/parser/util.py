@@ -2,6 +2,7 @@ import hashlib
 import json
 import logging
 import sys
+from pathlib import Path
 
 import aiohttp
 import requests
@@ -28,13 +29,12 @@ async def handle_html_async(cookie, url, session):
 
         if GENERATE_TEST_DATA:
             import io
-            import os
 
-            resp_file = os.path.join(TEST_DATA_DIR, '%s.html' % hash_url(url))
+            resp_file = str(Path(TEST_DATA_DIR) / f'{hash_url(url)}.html')
             with io.open(resp_file, 'wb') as f:
                 f.write(content)
 
-            with io.open(os.path.join(TEST_DATA_DIR, URL_MAP_FILE), 'r+') as f:
+            with io.open(Path(TEST_DATA_DIR) / URL_MAP_FILE, 'r+') as f:
                 url_map = json.loads(f.read())
                 url_map[url] = resp_file
                 f.seek(0)
@@ -56,13 +56,12 @@ def handle_html(cookie, url):
 
         if GENERATE_TEST_DATA:
             import io
-            import os
 
-            resp_file = os.path.join(TEST_DATA_DIR, '%s.html' % hash_url(url))
+            resp_file = str(Path(TEST_DATA_DIR) / f'{hash_url(url)}.html')
             with io.open(resp_file, 'w', encoding='utf-8') as f:
                 f.write(resp.text)
 
-            with io.open(os.path.join(TEST_DATA_DIR, URL_MAP_FILE), 'r+') as f:
+            with io.open(Path(TEST_DATA_DIR) / URL_MAP_FILE, 'r+') as f:
                 url_map = json.loads(f.read())
                 url_map[url] = resp_file
                 f.seek(0)
@@ -83,12 +82,12 @@ def handle_garbled(info):
         else:
             info_str = str(info) # 若不支持 xpath，将其转换为字符串
 
-        info = info_str.replace(u'\u200b', '').encode(
+        info = info_str.replace('\u200b', '').encode(
             sys.stdout.encoding, 'ignore').decode(sys.stdout.encoding)
         return info
     except Exception as e:
         logger.exception(e)
-        return u'无'
+        return '无'
 
 
 def bid2mid(bid):
@@ -134,7 +133,7 @@ def to_video_download_url(cookie, video_page_url):
             if not video_url:  # 说明该视频为直播
                 video_url = ''
     except json.decoder.JSONDecodeError:
-        logger.warning(u'当前账号没有浏览该视频的权限')
+        logger.warning('当前账号没有浏览该视频的权限')
 
     return video_url
 
@@ -146,10 +145,10 @@ def string_to_int(string):
         return 0
     if isinstance(string, int):
         return string
-    elif string.endswith(u'万+'):
+    elif string.endswith('万+'):
         string = string[:-2] + '0000'
-    elif string.endswith(u'万'):
+    elif string.endswith('万'):
         string = float(string[:-1]) * 10000
-    elif string.endswith(u'亿'):
+    elif string.endswith('亿'):
         string = float(string[:-1]) * 100000000
     return int(string)

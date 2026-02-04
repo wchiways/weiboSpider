@@ -79,7 +79,7 @@ class SqliteWriter(Writer):
             weibo.user_id = self.user.id
             weibo_list.append(weibo.to_dict())
         self._sqlite_insert('weibo', weibo_list)
-        logger.info(u'%d条微博写入sqlite数据库完毕', len(weibos))
+        logger.info(f'{len(weibos)}条微博写入sqlite数据库完毕')
 
     def write_user(self, user):
         """将爬取的用户信息写入sqlite数据库"""
@@ -105,4 +105,4 @@ class SqliteWriter(Writer):
                 )"""
         self._sqlite_create_table(create_table)
         self._sqlite_insert('user', [user.to_dict()])
-        logger.info(u'%s信息写入sqlite数据库完毕', user.nickname)
+        logger.info(f'{user.nickname}信息写入sqlite数据库完毕')

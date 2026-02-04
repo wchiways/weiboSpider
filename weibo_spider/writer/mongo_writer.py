@@ -20,7 +20,7 @@ class MongoWriter(Writer):
             import pymongo
         except ImportError:
             logger.warning(
-                u'系统中可能没有安装pymongo库，请先运行 pip install pymongo ，再运行程序')
+                '系统中可能没有安装pymongo库，请先运行 pip install pymongo ，再运行程序')
             sys.exit()
         try:
             from pymongo import MongoClient
@@ -42,7 +42,7 @@ class MongoWriter(Writer):
                     collection.update_one({'id': info['id']}, {'$set': info})
         except pymongo.errors.ServerSelectionTimeoutError:
             logger.warning(
-                u'系统中可能没有安装或启动MongoDB数据库，请先根据系统环境安装或启动MongoDB，再运行程序')
+                '系统中可能没有安装或启动MongoDB数据库，请先根据系统环境安装或启动MongoDB，再运行程序')
             sys.exit()
 
     def write_weibo(self, weibos):
@@ -52,11 +52,11 @@ class MongoWriter(Writer):
             w.user_id = self.user.id
             weibo_list.append(w.to_dict())
         self._info_to_mongodb('weibo', weibo_list)
-        logger.info(u'%d条微博写入MongoDB数据库完毕', len(weibos))
+        logger.info(f'{len(weibos)}条微博写入MongoDB数据库完毕')
 
     def write_user(self, user):
         """将爬取的用户信息写入MongoDB数据库"""
         self.user = user
         user_list = [user.to_dict()]
         self._info_to_mongodb('user', user_list)
-        logger.info(u'%s信息写入MongoDB数据库完毕', user.nickname)
+        logger.info(f'{user.nickname}信息写入MongoDB数据库完毕')

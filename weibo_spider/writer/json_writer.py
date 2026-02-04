@@ -1,7 +1,7 @@
 import codecs
 import json
 import logging
-import os
+from pathlib import Path
 
 from .writer import Writer
 
@@ -43,10 +43,10 @@ class JsonWriter(Writer):
     def write_weibo(self, weibos):
         """将爬到的信息写入json文件"""
         data = {}
-        if os.path.isfile(self.file_path):
+        if Path(self.file_path).is_file():
             with codecs.open(self.file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
         data = self._update_json_data(data, [w.to_dict() for w in weibos])
         with codecs.open(self.file_path, 'w', encoding='utf-8') as f:
             f.write(json.dumps(data, indent=4, ensure_ascii=False))
-        logger.info(u'%d条微博写入json文件完毕，保存路径：%s', len(weibos), self.file_path)
+        logger.info(f'{len(weibos)}条微博写入json文件完毕，保存路径：{self.file_path}')

@@ -9,10 +9,11 @@ import random
 import shutil
 import sys
 import asyncio
-import aiohttp
+from pathlib import Path
 from datetime import date, datetime, timedelta
 from time import sleep
 
+import aiohttp
 from absl import app, flags
 from tqdm import tqdm
 
@@ -29,8 +30,7 @@ flags.DEFINE_string('u', None, 'The user_id we want to input.')
 flags.DEFINE_string('user_id_list', None, 'The path to user_id_list.txt.')
 flags.DEFINE_string('output_dir', None, 'The dir path to store results.')
 
-logging_path = os.path.split(
-    os.path.realpath(__file__))[0] + os.sep + 'logging.conf'
+logging_path = Path(__file__).parent / 'logging.conf'
 logging.config.fileConfig(logging_path)
 logger = logging.getLogger('spider')
 
@@ -83,10 +83,10 @@ class Spider:
         if FLAGS.user_id_list:
             user_id_list = FLAGS.user_id_list
         if not isinstance(user_id_list, list):
-            if not os.path.isabs(user_id_list):
-                user_id_list = os.getcwd() + os.sep + user_id_list
-            if not os.path.isfile(user_id_list):
-                logger.warning('不存在%s文件', user_id_list)
+            if not Path(user_id_list).is_absolute():
+                user_id_list = str(Path.cwd() / user_id_list)
+            if not Path(user_id_list).is_file():
+                logger.warning(f'不存在{user_id_list}文件')
                 sys.exit()
             self.user_config_file_path = user_id_list
         if FLAGS.u:
@@ -142,7 +142,7 @@ class Spider:
 
     async def get_user_info(self, user_uri):
         """获取用户信息"""
-        url = 'https://weibo.cn/%s/profile' % (user_uri)
+        url = f'https://weibo.cn/{user_uri}/profile'
         selector = await handle_html_async(self.cookie, url, self.session)
         self.user = await IndexParser(self.cookie, user_uri, selector=selector).get_user_async(self.session)
         self.page_count += 1
@@ -167,7 +167,7 @@ class Spider:
             if since_date <= now:
                 # Async fetch page num
                 user_uri = self.user_config['user_uri']
-                url = 'https://weibo.cn/%s/profile' % (user_uri)
+                url = f'https://weibo.cn/{user_uri}/profile'
                 selector = await handle_html_async(self.cookie, url, self.session)
                 page_num = IndexParser(self.cookie, user_uri, selector=selector).get_page_num()
                 
@@ -177,7 +177,7 @@ class Spider:
                     wait_seconds = int(
                         self.global_wait[0][1] *
                         min(1, self.page_count / self.global_wait[0][0]))
-                    logger.info(u'即将进入全局等待时间，%d秒后程序继续执行' % wait_seconds)
+                    logger.info(f'即将进入全局等待时间，{wait_seconds}秒后程序继续执行')
                     for i in tqdm(range(wait_seconds)):
                         await asyncio.sleep(1)
                     self.page_count = 0
@@ -204,12 +204,7 @@ class Spider:
                     weibos, self.weibo_id_list, to_continue = parser.get_one_page(self.weibo_id_list)
                     
                     logger.info(
-                        u'%s已获取%s(%s)的第%d页微博%s',
-                        '-' * 30,
-                        self.user.nickname,
-                        self.user.id,
-                        page,
-                        '-' * 30,
+                        f"{'-' * 30}已获取{self.user.nickname}({self.user.id})的第{page}页微博{'-' * 30}"
                     )
                     self.page_count += 1
                     if weibos:
@@ -223,8 +218,7 @@ class Spider:
                         random_pages = random.randint(*self.random_wait_pages)
 
                     if self.page_count >= self.global_wait[0][0]:
-                        logger.info(u'即将进入全局等待时间，%d秒后程序继续执行' %
-                                    self.global_wait[0][1])
+                        logger.info(f'即将进入全局等待时间，{self.global_wait[0][1]}秒后程序继续执行')
                         for i in tqdm(range(self.global_wait[0][1])):
                             await asyncio.sleep(1)
                         self.page_count = 0
@@ -247,16 +241,16 @@ class Spider:
             if self.result_dir_name:
                 dir_name = self.user.id
             if FLAGS.output_dir is not None:
-                file_dir = FLAGS.output_dir + os.sep + dir_name
+                file_dir = Path(FLAGS.output_dir) / dir_name
             else:
-                file_dir = (os.getcwd() + os.sep + 'weibo' + os.sep + dir_name)
+                file_dir = Path.cwd() / 'weibo' / dir_name
             if type == 'img' or type == 'video':
-                file_dir = file_dir + os.sep + type
-            if not os.path.isdir(file_dir):
-                os.makedirs(file_dir)
+                file_dir = file_dir / type
+            if not file_dir.is_dir():
+                file_dir.mkdir(parents=True, exist_ok=True)
             if type == 'img' or type == 'video':
                 return file_dir
-            file_path = file_dir + os.sep + self.user.id + '.' + type
+            file_path = file_dir / f'{self.user.id}.{type}'
             return file_path
         except Exception as e:
             logger.exception(e)
@@ -347,10 +341,10 @@ class Spider:
                 await self.write_weibo(weibos)
                 self.got_num += len(weibos)
             if not self.filter:
-                logger.info(u'共爬取' + str(self.got_num) + u'条微博')
+                logger.info(f'共爬取{self.got_num}条微博')
             else:
-                logger.info(u'共爬取' + str(self.got_num) + u'条原创微博')
-            logger.info(u'信息抓取完毕')
+                logger.info(f'共爬取{self.got_num}条原创微博')
+            logger.info('信息抓取完毕')
             logger.info('*' * 100)
         except Exception as e:
             logger.exception(e)
@@ -360,7 +354,7 @@ class Spider:
         try:
             if not self.user_config_list:
                 logger.info(
-                    u'没有配置有效的user_id，请通过config.json或user_id_list.txt配置user_id')
+                    '没有配置有效的user_id，请通过config.json或user_id_list.txt配置user_id')
                 return
             
             async with aiohttp.ClientSession() as session:
@@ -381,17 +375,15 @@ class Spider:
 
 def _get_config():
     """获取config.json数据"""
-    src = os.path.split(
-        os.path.realpath(__file__))[0] + os.sep + 'config_sample.json'
-    config_path = os.getcwd() + os.sep + 'config.json'
+    src = Path(__file__).parent / 'config_sample.json'
+    config_path = Path.cwd() / 'config.json'
     if FLAGS.config_path:
-        config_path = FLAGS.config_path
-    elif not os.path.isfile(config_path):
+        config_path = Path(FLAGS.config_path)
+    elif not config_path.is_file():
         shutil.copy(src, config_path)
-        logger.info(u'请先配置当前目录(%s)下的config.json文件，'
-                    u'如果想了解config.json参数的具体意义及配置方法，请访问\n'
-                    u'https://github.com/dataabc/weiboSpider#2程序设置' % 
-                    os.getcwd())
+        logger.info(f'请先配置当前目录({Path.cwd()})下的config.json文件，'
+                    '如果想了解config.json参数的具体意义及配置方法，请访问\n'
+                    'https://github.com/dataabc/weiboSpider#2程序设置')
         sys.exit()
     try:
         with open(config_path) as f:
@@ -402,8 +394,8 @@ def _get_config():
             config = json.loads(f.read())
             return config
     except ValueError:
-        logger.error(u'config.json 格式不正确，请访问 '
-                     u'https://github.com/dataabc/weiboSpider#2程序设置')
+        logger.error('config.json 格式不正确，请访问 '
+                     'https://github.com/dataabc/weiboSpider#2程序设置')
         sys.exit()
 
 async def async_main(_):

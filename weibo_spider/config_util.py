@@ -1,9 +1,9 @@
 import codecs
 import logging
-import os
 import sys
 import browser_cookie3
 from datetime import datetime
+from pathlib import Path
 import json
 
 logger = logging.getLogger('spider.config_util')
@@ -28,87 +28,86 @@ def validate_config(config):
     argument_list = ['filter', 'pic_download', 'video_download']
     for argument in argument_list:
         if config[argument] != 0 and config[argument] != 1:
-            logger.warning(u'%s值应为0或1,请重新输入', config[argument])
+            logger.warning(f'{config[argument]}值应为0或1,请重新输入')
             sys.exit()
 
     # 验证since_date
     since_date = config['since_date']
     if (not _is_date(str(since_date))) and (not isinstance(since_date, int)):
-        logger.warning(u'since_date值应为yyyy-mm-dd形式或整数,请重新输入')
+        logger.warning('since_date值应为yyyy-mm-dd形式或整数,请重新输入')
         sys.exit()
 
     # 验证end_date
     end_date = str(config['end_date'])
     if (not _is_date(end_date)) and (end_date != 'now'):
-        logger.warning(u'end_date值应为yyyy-mm-dd形式或"now",请重新输入')
+        logger.warning('end_date值应为yyyy-mm-dd形式或"now",请重新输入')
         sys.exit()
 
     # 验证random_wait_pages
     random_wait_pages = config['random_wait_pages']
     if not isinstance(random_wait_pages, list):
-        logger.warning(u'random_wait_pages参数值应为list类型,请重新输入')
+        logger.warning('random_wait_pages参数值应为list类型,请重新输入')
         sys.exit()
     if (not isinstance(min(random_wait_pages), int)) or (not isinstance(
             max(random_wait_pages), int)):
-        logger.warning(u'random_wait_pages列表中的值应为整数类型,请重新输入')
+        logger.warning('random_wait_pages列表中的值应为整数类型,请重新输入')
         sys.exit()
     if min(random_wait_pages) < 1:
-        logger.warning(u'random_wait_pages列表中的值应大于0,请重新输入')
+        logger.warning('random_wait_pages列表中的值应大于0,请重新输入')
         sys.exit()
 
     # 验证random_wait_seconds
     random_wait_seconds = config['random_wait_seconds']
     if not isinstance(random_wait_seconds, list):
-        logger.warning(u'random_wait_seconds参数值应为list类型,请重新输入')
+        logger.warning('random_wait_seconds参数值应为list类型,请重新输入')
         sys.exit()
     if (not isinstance(min(random_wait_seconds), int)) or (not isinstance(
             max(random_wait_seconds), int)):
-        logger.warning(u'random_wait_seconds列表中的值应为整数类型,请重新输入')
+        logger.warning('random_wait_seconds列表中的值应为整数类型,请重新输入')
         sys.exit()
     if min(random_wait_seconds) < 1:
-        logger.warning(u'random_wait_seconds列表中的值应大于0,请重新输入')
+        logger.warning('random_wait_seconds列表中的值应大于0,请重新输入')
         sys.exit()
 
     # 验证global_wait
     global_wait = config['global_wait']
     if not isinstance(global_wait, list):
-        logger.warning(u'global_wait参数值应为list类型,请重新输入')
+        logger.warning('global_wait参数值应为list类型,请重新输入')
         sys.exit()
     for g in global_wait:
         if not isinstance(g, list):
-            logger.warning(u'global_wait参数内的值应为长度为2的list类型,请重新输入')
+            logger.warning('global_wait参数内的值应为长度为2的list类型,请重新输入')
             sys.exit()
         if len(g) != 2:
-            logger.warning(u'global_wait参数内的list长度应为2,请重新输入')
+            logger.warning('global_wait参数内的list长度应为2,请重新输入')
             sys.exit()
         for i in g:
             if (not isinstance(i, int)) or i < 1:
-                logger.warning(u'global_wait列表中的值应为大于0的整数,请重新输入')
+                logger.warning('global_wait列表中的值应为大于0的整数,请重新输入')
                 sys.exit()
 
     # 验证write_mode
     write_mode = ['txt', 'csv', 'json', 'mongo', 'mysql', 'sqlite', 'kafka','post']
     if not isinstance(config['write_mode'], list):
-        logger.warning(u'write_mode值应为list类型')
+        logger.warning('write_mode值应为list类型')
         sys.exit()
     for mode in config['write_mode']:
         if mode not in write_mode:
             logger.warning(
-                u'%s为无效模式，请从txt、csv、json、post、mongo、sqlite, kafka和mysql中挑选一个或多个作为write_mode',
-                mode)
+                f'{mode}为无效模式，请从txt、csv、json、post、mongo、sqlite, kafka和mysql中挑选一个或多个作为write_mode')
             sys.exit()
 
     # 验证user_id_list
     user_id_list = config['user_id_list']
     if (not isinstance(user_id_list,
                        list)) and (not user_id_list.endswith('.txt')):
-        logger.warning(u'user_id_list值应为list类型或txt文件路径')
+        logger.warning('user_id_list值应为list类型或txt文件路径')
         sys.exit()
     if not isinstance(user_id_list, list):
-        if not os.path.isabs(user_id_list):
-            user_id_list = os.getcwd() + os.sep + user_id_list
-        if not os.path.isfile(user_id_list):
-            logger.warning(u'不存在%s文件', user_id_list)
+        if not Path(user_id_list).is_absolute():
+            user_id_list = str(Path.cwd() / user_id_list)
+        if not Path(user_id_list).is_file():
+            logger.warning(f'不存在{user_id_list}文件')
             sys.exit()
 
 
@@ -119,7 +118,7 @@ def get_user_config_list(file_name, default_since_date):
             lines = f.read().splitlines()
             lines = [line.decode('utf-8-sig') for line in lines]
         except UnicodeDecodeError:
-            logger.error(u'%s文件应为utf-8编码，请先将文件编码转为utf-8再运行程序', file_name)
+            logger.error(f'{file_name}文件应为utf-8编码，请先将文件编码转为utf-8再运行程序')
             sys.exit()
         user_config_list = []
         for line in lines:
@@ -143,7 +142,7 @@ def update_user_config_file(user_config_file_path, user_uri, nickname,
                             start_time):
     """更新用户配置文件"""
     if not user_config_file_path:
-        user_config_file_path = os.getcwd() + os.sep + 'user_id_list.txt'
+        user_config_file_path = str(Path.cwd() / 'user_id_list.txt')
     with open(user_config_file_path, 'rb') as f:
         lines = f.read().splitlines()
         lines = [line.decode('utf-8-sig') for line in lines]
@@ -169,8 +168,8 @@ def update_user_config_file(user_config_file_path, user_uri, nickname,
 def add_user_uri_list(user_config_file_path, user_uri_list):
     """向user_id_list.txt文件添加若干user_uri"""
     if not user_config_file_path:
-        user_config_file_path = os.getcwd() + os.sep + 'user_id_list.txt'
-    if os.path.isfile(user_config_file_path):
+        user_config_file_path = str(Path.cwd() / 'user_id_list.txt')
+    if Path(user_config_file_path).is_file():
         user_uri_list[0] = '\n' + user_uri_list[0]
     with codecs.open(user_config_file_path, 'a', encoding='utf-8') as f:
         f.write('\n'.join(user_uri_list))
@@ -182,13 +181,13 @@ def get_cookie():
         cookies_dict = {cookie.name: cookie.value for cookie in chrome_cookies}
         return cookies_dict
     except Exception as e:
-        logger.error(u'Failed to obtain weibo.cn cookie from Chrome browser: %s', str(e))
+        logger.error(f'Failed to obtain weibo.cn cookie from Chrome browser: {e}')
         raise 
     
 def update_cookie_config(cookie, user_config_file_path):
     """Update cookie in config.json"""
     if not user_config_file_path:
-        user_config_file_path = os.getcwd() + os.sep + 'config.json' 
+        user_config_file_path = str(Path.cwd() / 'config.json')
     try:
         with codecs.open(user_config_file_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
@@ -200,7 +199,7 @@ def update_cookie_config(cookie, user_config_file_path):
             with codecs.open(user_config_file_path, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=4, ensure_ascii=False)
     except Exception as e:
-        logger.error(u'Failed to update cookie in config file: %s', str(e))
+        logger.error(f'Failed to update cookie in config file: {e}')
         raise 
     
 def check_cookie(user_config_file_path): 
@@ -213,5 +212,5 @@ def check_cookie(user_config_file_path):
         else:
             update_cookie_config(cookie, user_config_file_path)
     except Exception as e:
-        logger.error(u'Check for cookie failed: %s', str(e))
+        logger.error(f'Check for cookie failed: {e}')
         raise 

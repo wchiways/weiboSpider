@@ -41,6 +41,6 @@ class CsvWriter(Writer):
                       newline='') as f:
                 writer = csv.writer(f)
                 writer.writerows(result_data)
-            logger.info(u'%d条微博写入csv文件完毕，保存路径：%s', len(weibos), self.file_path)
+            logger.info(f'{len(weibos)}条微博写入csv文件完毕，保存路径：{self.file_path}')
         except Exception as e:
             logger.exception(e)

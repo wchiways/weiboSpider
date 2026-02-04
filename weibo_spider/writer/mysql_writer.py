@@ -31,13 +31,13 @@ class MySqlWriter(Writer):
             import pymysql
         except ImportError:
             logger.warning(
-                u'系统中可能没有安装pymysql库，请先运行 pip install pymysql ，再运行程序')
+                '系统中可能没有安装pymysql库，请先运行 pip install pymysql ，再运行程序')
             sys.exit()
         try:
             connection = pymysql.connect(**self.mysql_config)
             self._mysql_create(connection, sql)
         except pymysql.OperationalError:
-            logger.warning(u'系统中可能没有安装或正确配置MySQL数据库，请先根据系统环境安装或配置MySQL，再运行程序')
+            logger.warning('系统中可能没有安装或正确配置MySQL数据库，请先根据系统环境安装或配置MySQL，再运行程序')
             sys.exit()
 
     def _mysql_create_table(self, sql):
@@ -108,7 +108,7 @@ class MySqlWriter(Writer):
                 weibo.user_id = self.user.id
                 weibo_list.append(weibo.to_dict())
             self._mysql_insert('weibo', weibo_list)
-            logger.info(u'%d条微博写入MySQL数据库完毕', len(weibos))
+            logger.info(f'{len(weibos)}条微博写入MySQL数据库完毕')
         except Exception as e:
             logger.exception(e)
 
@@ -137,6 +137,6 @@ class MySqlWriter(Writer):
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""
             self._mysql_create_table(create_table)
             self._mysql_insert('user', [user.to_dict()])
-            logger.info(u'%s信息写入MySQL数据库完毕', user.nickname)
+            logger.info(f'{user.nickname}信息写入MySQL数据库完毕')
         except Exception as e:
             logger.exception(e)

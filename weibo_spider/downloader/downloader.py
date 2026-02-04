@@ -1,10 +1,10 @@
 # -*- coding: UTF-8 -*-
 import asyncio
 import logging
-import os
 import sys
 import random
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import aiohttp
 from tqdm import tqdm
@@ -14,7 +14,7 @@ logger = logging.getLogger('spider.downloader')
 
 class Downloader(ABC):
     def __init__(self, file_dir, file_download_timeout):
-        self.file_dir = file_dir
+        self.file_dir = Path(file_dir)
         self.describe = ''
         self.key = ''
         self.file_download_timeout = [5, 5, 10]
@@ -33,7 +33,8 @@ class Downloader(ABC):
     async def download_one_file(self, url, file_path, weibo_id, session):
         """下载单个文件(图片/视频)"""
         try:
-            if not os.path.isfile(file_path):
+            file_path = Path(file_path)
+            if not file_path.is_file():
                 # 随机延时，模拟人工操作
                 await asyncio.sleep(random.uniform(0.5, 1.5))
                 
@@ -59,11 +60,11 @@ class Downloader(ABC):
                     if last_exception:
                         raise last_exception
 
-            return os.path.isfile(file_path)
+            return file_path.is_file()
         except Exception as e:
-            error_file = self.file_dir + os.sep + 'not_downloaded.txt'
+            error_file = self.file_dir / 'not_downloaded.txt'
             with open(error_file, 'ab') as f:
-                url = weibo_id + ':' + file_path + ':' + url + '\n'
+                url = f'{weibo_id}:{file_path}:{url}\n'
                 f.write(url.encode(sys.stdout.encoding))
             logger.exception(e)
             return False
@@ -71,11 +72,11 @@ class Downloader(ABC):
     async def download_files(self, weibos, session):
         """下载文件(图片/视频)"""
         try:
-            logger.info(u'即将进行%s下载', self.describe)
+            logger.info(f'即将进行{self.describe}下载')
             for w in tqdm(weibos, desc='Download progress'):
-                if getattr(w, self.key) != u'无':
+                if getattr(w, self.key) != '无':
                     await self.handle_download(getattr(w, self.key), w, session)
-            logger.info(u'%s下载完毕,保存路径:', self.describe)
+            logger.info(f'{self.describe}下载完毕,保存路径:')
             logger.info(self.file_dir)
         except Exception as e:
             logger.exception(e)

@@ -31,9 +31,9 @@ class User:
     def __str__(self):
         """打印微博用户信息"""
         result = ''
-        result += u'用户昵称: %s\n' % self.nickname
-        result += u'用户id: %s\n' % self.id
-        result += u'微博数: %d\n' % self.weibo_num
-        result += u'关注数: %d\n' % self.following
-        result += u'粉丝数: %d\n' % self.followers
+        result += f'用户昵称: {self.nickname}\n'
+        result += f'用户id: {self.id}\n'
+        result += f'微博数: {self.weibo_num}\n'
+        result += f'关注数: {self.following}\n'
+        result += f'粉丝数: {self.followers}\n'
         return result

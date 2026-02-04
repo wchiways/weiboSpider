@@ -11,7 +11,7 @@ class IndexParser(Parser):
     def __init__(self, cookie, user_uri, selector=None):
         self.cookie = cookie
         self.user_uri = user_uri
-        self.url = 'https://weibo.cn/%s/profile' % (user_uri)
+        self.url = f'https://weibo.cn/{user_uri}/profile'
         self.selector = selector if selector is not None else handle_html(self.cookie, self.url)
 
     def _get_user_id(self):
@@ -19,7 +19,7 @@ class IndexParser(Parser):
         user_id = self.user_uri
         url_list = self.selector.xpath("//div[@class='u']//a")
         for url in url_list:
-            if (url.xpath('string(.)')) == u'资料':
+            if (url.xpath('string(.)')) == '资料':
                 if url.xpath('@href') and url.xpath('@href')[0].endswith(
                         '/info'):
                     link = url.xpath('@href')[0]
@@ -49,7 +49,7 @@ class IndexParser(Parser):
             user_id = self._get_user_id()
             
             from .util import handle_html_async # Local import if needed or top level
-            info_url = 'https://weibo.cn/%s/info' % (user_id)
+            info_url = f'https://weibo.cn/{user_id}/info'
             info_selector = await handle_html_async(self.cookie, info_url, session)
             
             self.user = InfoParser(self.cookie,

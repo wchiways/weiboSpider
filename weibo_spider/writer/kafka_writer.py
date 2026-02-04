@@ -13,7 +13,7 @@ class KafkaWriter(Writer):
             from kafka import KafkaProducer
         except ImportError:
             logger.warning(
-                u'系统中可能没有安装kafka库，请先运行 pip install kafka-python ，再运行程序')
+                '系统中可能没有安装kafka库，请先运行 pip install kafka-python ，再运行程序')
             sys.exit()
 
         self.kafka_config = kafka_config
@@ -23,7 +23,7 @@ class KafkaWriter(Writer):
                                                   ).encode('UTF-8'))
         self.weibo_topics = list(kafka_config['weibo_topics'])
         self.user_topics = list(kafka_config['user_topics'])
-        logger.info('{}', kafka_config)
+        logger.info(f'{kafka_config}')
 
     def write_weibo(self, weibo):
         for w in weibo:

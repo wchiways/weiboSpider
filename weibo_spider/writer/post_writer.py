@@ -54,6 +54,6 @@ class PostWriter(Writer):
         data = self._update_json_data(data, [w.to_dict() for w in weibos])
         if data:
             self.send_post_request_with_token(self.api_url, data, self.api_token, 3, 2)
-            logger.info(u'%d条微博通过POST发送到 %s', len(weibos), self.api_url)
+            logger.info(f'{len(weibos)}条微博通过POST发送到 {self.api_url}')
         else:
-            logger.info(u'没有获取到微博，略过API POST')
+            logger.info('没有获取到微博，略过API POST')
